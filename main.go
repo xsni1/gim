@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 
@@ -8,13 +9,31 @@ import (
 )
 
 func main() {
-    // we have to restore it, otherwise terminal stays in raw mode
-    prevState, _ := term.MakeRaw(0)
-	buf := []byte("aaaaaaaqweeeefdsjknfjnfsjdnknsdkjfnjk\n")
-	os.Stdout.Write(buf)
+	lines := [][]byte{}
+	// we have to restore it, otherwise terminal stays in raw mode
+	prevState, _ := term.MakeRaw(0)
+
+	f, _ := os.Open("file")
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		lines = append(lines, s.Bytes())
+	}
+
 	// alternate xterm screen
 	fmt.Print("\u001B[?1049h")
 	insertMode := false
+
+	// move to the top
+	fmt.Print("\033[1;1H")
+
+	for _, line := range lines {
+		fmt.Print(string(line))
+		fmt.Print("\033[1B")
+		// move to the first column
+        fmt.Print("\033[1G")
+		// fmt.Print("\033[1;1H")
+	}
+
 	defer func() {
 		term.Restore(0, prevState)
 		fmt.Print("\u001B[?1049l")
@@ -59,3 +78,6 @@ func main() {
 
 	}
 }
+
+// przeczytac line by line caly plik - rozdzielajac po \n albo \r\n
+// printowac kazda linie jako osobna linie w terminalu
