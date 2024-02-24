@@ -8,29 +8,33 @@ import (
 )
 
 func main() {
+	term.MakeRaw(0)
 	buf := []byte("aaaaaaaqweeeefdsjknfjnfsjdnknsdkjfnjk\n")
 	os.Stdout.Write(buf)
-    prevState, _ := term.MakeRaw(0)
-    insertMode := false
-    defer term.Restore(0, prevState)
+	// alternate xterm screen
+	fmt.Print("\u001B[?1049h")
+	insertMode := false
+	defer func() {
+		// term.Restore(0, prevState)
+		fmt.Print("\u001B[?1049l")
+	}()
 
 	for {
 		in := make([]byte, 10)
 		os.Stdin.Read(in)
 
+		if in[0] == 27 {
+			insertMode = false
+		}
 
-        if in[0] == 27 {
-            insertMode = false
-        }
+		if insertMode {
+			fmt.Print(string(in[0]))
+			continue
+		}
 
-        if insertMode {
-            fmt.Print(string(in[0]))
-            continue
-        }
-
-        if in[0] == 'q' {
-            break
-        }
+		if in[0] == 'q' {
+			break
+		}
 
 		if in[0] == 'j' {
 			os.Stdout.Write([]byte("\033[1B"))
@@ -49,7 +53,7 @@ func main() {
 		}
 
 		if in[0] == 'i' {
-            insertMode = true
+			insertMode = true
 		}
 
 	}
