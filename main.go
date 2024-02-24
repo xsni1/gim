@@ -8,14 +8,15 @@ import (
 )
 
 func main() {
-	term.MakeRaw(0)
+    // we have to restore it, otherwise terminal stays in raw mode
+    prevState, _ := term.MakeRaw(0)
 	buf := []byte("aaaaaaaqweeeefdsjknfjnfsjdnknsdkjfnjk\n")
 	os.Stdout.Write(buf)
 	// alternate xterm screen
 	fmt.Print("\u001B[?1049h")
 	insertMode := false
 	defer func() {
-		// term.Restore(0, prevState)
+		term.Restore(0, prevState)
 		fmt.Print("\u001B[?1049l")
 	}()
 
