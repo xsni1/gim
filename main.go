@@ -20,11 +20,11 @@ func redraw(lines [][]byte, pos Position) {
 	// move to the top
 	fmt.Print("\033[1;1H")
 
-    for i := 0; i < height; i++ {
-        // terminal can be taller than the amount of lines
-        if pos.yScroll+i >= len(lines) {
-            break
-        }
+	for i := 0; i < height; i++ {
+		// terminal can be taller than the amount of lines
+		if pos.yScroll+i >= len(lines) {
+			break
+		}
 		fmt.Print(string(lines[pos.yScroll+i]))
 
 		// go down
@@ -33,8 +33,7 @@ func redraw(lines [][]byte, pos Position) {
 		fmt.Print("\033[1G")
 	}
 
-    // move to the top
-	fmt.Print("\033[1;1H")
+	fmt.Printf("\033[%d;%dH", pos.y, pos.x)
 }
 
 // TODO: Terminal physical lines != text lines - this is causing LOTS of bugs
@@ -121,5 +120,6 @@ func main() {
 			insertMode = true
 		}
 
+		redraw(lines, pos)
 	}
 }
