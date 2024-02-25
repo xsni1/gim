@@ -9,8 +9,12 @@ import (
 )
 
 type Position struct {
-	x       int
-	y       int
+	// terminal x, y coords
+	tX int
+	tY int
+	// file x, y coords
+	fX      int
+	fY      int
 	yScroll int
 }
 
@@ -58,7 +62,7 @@ func redraw(lines [][]byte, pos Position) {
 		moveCursorToColumn(1)
 	}
 
-	moveCursorTo(pos.x, pos.y)
+	moveCursorTo(pos.tX, pos.tY)
 }
 
 // TODO: Terminal physical lines != text lines - this is causing LOTS of bugs
@@ -68,8 +72,10 @@ func main() {
 	lines := [][]byte{}
 	insertMode := false
 	pos := Position{
-		x: 1,
-		y: 1,
+		tX: 1,
+		tY: 1,
+        fX: 1,
+        fY: 1,
 	}
 
 	// we have to restore it, otherwise terminal stays in raw mode
@@ -101,18 +107,20 @@ func main() {
 
 		if insertMode {
 			fmt.Print(string(in[0]))
-			lines[pos.y-1] = append(lines[pos.y-1][:pos.x], lines[pos.y-1][pos.x-1:]...)
-			lines[pos.y-1][pos.x-1] = in[0]
-			pos.x++
+			lines[pos.fY-1] = append(lines[pos.fY-1][:pos.fX], lines[pos.fY-1][pos.fX-1:]...)
+			lines[pos.fY-1][pos.fX-1] = in[0]
+			pos.tX++
+			// TODO: handle inserting last character in line
+			pos.fX++
 
 			eraseLine()
-			// move to the first column
-			fmt.Print("\033[1G")
+			moveCursorToColumn(1)
 
-			fmt.Print(string(lines[pos.y-1]))
+			fmt.Print(string(lines[pos.tY-1]))
 
-			moveCursorTo(pos.x, pos.y)
+			moveCursorTo(pos.tX, pos.tY)
 
+			redraw(lines, pos)
 			continue
 		}
 
@@ -129,22 +137,26 @@ func main() {
 			// }
 
 			moveCurorDownBy(1)
-			pos.y++
+			pos.tY++
+			pos.fY++
 		}
 
 		if in[0] == 'k' {
 			moveCurorUpBy(1)
-			pos.y--
+			pos.tY--
+			pos.fY--
 		}
 
 		if in[0] == 'l' {
 			moveCurorRightBy(1)
-			pos.x++
+			pos.tX++
+			pos.fX++
 		}
 
 		if in[0] == 'h' {
 			moveCurorLeftBy(1)
-			pos.x--
+			pos.tX--
+			pos.fX--
 		}
 
 		if in[0] == 'i' {
