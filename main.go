@@ -23,19 +23,23 @@ func eraseLine() {
 }
 
 func moveCurorDownBy(n int) {
-	fmt.Print("\033[1B")
+	fmt.Printf("\033[%dB", n)
 }
 
 func moveCurorUpBy(n int) {
-	fmt.Print("\033[1A")
+	fmt.Printf("\033[%dA", n)
 }
 
 func moveCurorLeftBy(n int) {
-	fmt.Print("\033[1D")
+	fmt.Printf("\033[%dD", n)
 }
 
 func moveCurorRightBy(n int) {
-	fmt.Print("\033[1C")
+	fmt.Printf("\033[%dC", n)
+}
+
+func moveCursorToColumn(n int) {
+	fmt.Printf("\033[%dG", n)
 }
 
 func redraw(lines [][]byte, pos Position) {
@@ -50,10 +54,8 @@ func redraw(lines [][]byte, pos Position) {
 		}
 		fmt.Print(string(lines[pos.yScroll+i]))
 
-		// go down
-		fmt.Print("\033[1B")
-		// move to the first column
-		fmt.Print("\033[1G")
+		moveCurorDownBy(1)
+		moveCursorToColumn(1)
 	}
 
 	moveCursorTo(pos.x, pos.y)
@@ -119,29 +121,29 @@ func main() {
 		}
 
 		if in[0] == 'j' {
-            // TODO: Differntiate console x,y and file x,y to handle multi-line single lines
-            // Here we could then: 
-            // if len(line) > term.width {
-            //   file.y stays the same
-            //   console.y++
-            // }
-        
+			// TODO: Differntiate console x,y and file x,y to handle multi-line single lines
+			// Here we could then:
+			// if len(line) > term.width {
+			//   file.y stays the same
+			//   console.y++
+			// }
+
 			moveCurorDownBy(1)
 			pos.y++
 		}
 
 		if in[0] == 'k' {
-            moveCurorUpBy(1)
+			moveCurorUpBy(1)
 			pos.y--
 		}
 
 		if in[0] == 'l' {
-            moveCurorRightBy(1)
+			moveCurorRightBy(1)
 			pos.x++
 		}
 
 		if in[0] == 'h' {
-            moveCurorLeftBy(1)
+			moveCurorLeftBy(1)
 			pos.x--
 		}
 
