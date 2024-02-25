@@ -9,18 +9,41 @@ import (
 )
 
 type Position struct {
-	x int
-	y int
+	x       int
+	y       int
+	yScroll int
+}
+
+func redraw(lines [][]byte, pos Position) {
+	_, height, _ := term.GetSize(0)
+
+	// move to the top
+	fmt.Print("\033[1;1H")
+
+    for i := 0; i < height; i++ {
+        // terminal can be taller than the amount of lines
+        if pos.yScroll+i >= len(lines) {
+            break
+        }
+		fmt.Print(string(lines[pos.yScroll+i]))
+
+		// go down
+		fmt.Print("\033[1B")
+		// move to the first column
+		fmt.Print("\033[1G")
+	}
+
+    // move to the top
+	fmt.Print("\033[1;1H")
 }
 
 // TODO: Terminal physical lines != text lines - this is causing LOTS of bugs
 // TODO: When text goes to the next line old text gets overwritten
 // TODO: \t not interpreted correctly
-
 func main() {
 	lines := [][]byte{}
 	insertMode := false
-	cursorPosition := Position{
+	pos := Position{
 		x: 1,
 		y: 1,
 	}
@@ -36,25 +59,12 @@ func main() {
 
 	// alternate xterm screen
 	fmt.Print("\u001B[?1049h")
-
-	// move to the top
-	fmt.Print("\033[1;1H")
-
-	for _, line := range lines {
-		fmt.Print(string(line))
-
-        // go down
-		fmt.Print("\033[1B")
-		// move to the first column
-		fmt.Print("\033[1G")
-	}
-
-	fmt.Print("\033[1;1H")
-
 	defer func() {
 		term.Restore(0, prevState)
 		fmt.Print("\u001B[?1049l")
 	}()
+
+	redraw(lines, pos)
 
 	for {
 		// TODO: make it right
@@ -67,18 +77,18 @@ func main() {
 
 		if insertMode {
 			fmt.Print(string(in[0]))
-			lines[cursorPosition.y-1] = append(lines[cursorPosition.y-1][:cursorPosition.x], lines[cursorPosition.y-1][cursorPosition.x-1:]...)
-			lines[cursorPosition.y-1][cursorPosition.x-1] = in[0]
-            cursorPosition.x++
+			lines[pos.y-1] = append(lines[pos.y-1][:pos.x], lines[pos.y-1][pos.x-1:]...)
+			lines[pos.y-1][pos.x-1] = in[0]
+			pos.x++
 
 			// erase entire line
 			fmt.Print("\033[2K")
 			// move to the first column
 			fmt.Print("\033[1G")
 
-			fmt.Print(string(lines[cursorPosition.y-1]))
+			fmt.Print(string(lines[pos.y-1]))
 
-			fmt.Printf("\033[%d;%dH", cursorPosition.y, cursorPosition.x)
+			fmt.Printf("\033[%d;%dH", pos.y, pos.x)
 
 			continue
 		}
@@ -89,22 +99,22 @@ func main() {
 
 		if in[0] == 'j' {
 			os.Stdout.Write([]byte("\033[1B"))
-			cursorPosition.y++
+			pos.y++
 		}
 
 		if in[0] == 'k' {
 			os.Stdout.Write([]byte("\033[1A"))
-			cursorPosition.y--
+			pos.y--
 		}
 
 		if in[0] == 'l' {
 			os.Stdout.Write([]byte("\033[1C"))
-			cursorPosition.x++
+			pos.x++
 		}
 
 		if in[0] == 'h' {
 			os.Stdout.Write([]byte("\033[1D"))
-			cursorPosition.x--
+			pos.x--
 		}
 
 		if in[0] == 'i' {
@@ -113,4 +123,3 @@ func main() {
 
 	}
 }
-
