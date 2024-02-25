@@ -14,11 +14,34 @@ type Position struct {
 	yScroll int
 }
 
+func moveCursorTo(x, y int) {
+	fmt.Printf("\033[%d;%dH", y, x)
+}
+
+func eraseLine() {
+	fmt.Print("\033[2K")
+}
+
+func moveCurorDownBy(n int) {
+	fmt.Print("\033[1B")
+}
+
+func moveCurorUpBy(n int) {
+	fmt.Print("\033[1A")
+}
+
+func moveCurorLeftBy(n int) {
+	fmt.Print("\033[1D")
+}
+
+func moveCurorRightBy(n int) {
+	fmt.Print("\033[1C")
+}
+
 func redraw(lines [][]byte, pos Position) {
 	_, height, _ := term.GetSize(0)
 
-	// move to the top
-	fmt.Print("\033[1;1H")
+	moveCursorTo(1, 1)
 
 	for i := 0; i < height; i++ {
 		// terminal can be taller than the amount of lines
@@ -33,7 +56,7 @@ func redraw(lines [][]byte, pos Position) {
 		fmt.Print("\033[1G")
 	}
 
-	fmt.Printf("\033[%d;%dH", pos.y, pos.x)
+	moveCursorTo(pos.x, pos.y)
 }
 
 // TODO: Terminal physical lines != text lines - this is causing LOTS of bugs
@@ -80,14 +103,13 @@ func main() {
 			lines[pos.y-1][pos.x-1] = in[0]
 			pos.x++
 
-			// erase entire line
-			fmt.Print("\033[2K")
+			eraseLine()
 			// move to the first column
 			fmt.Print("\033[1G")
 
 			fmt.Print(string(lines[pos.y-1]))
 
-			fmt.Printf("\033[%d;%dH", pos.y, pos.x)
+			moveCursorTo(pos.x, pos.y)
 
 			continue
 		}
@@ -97,22 +119,22 @@ func main() {
 		}
 
 		if in[0] == 'j' {
-			os.Stdout.Write([]byte("\033[1B"))
+			moveCurorDownBy(1)
 			pos.y++
 		}
 
 		if in[0] == 'k' {
-			os.Stdout.Write([]byte("\033[1A"))
+            moveCurorUpBy(1)
 			pos.y--
 		}
 
 		if in[0] == 'l' {
-			os.Stdout.Write([]byte("\033[1C"))
+            moveCurorRightBy(1)
 			pos.x++
 		}
 
 		if in[0] == 'h' {
-			os.Stdout.Write([]byte("\033[1D"))
+            moveCurorLeftBy(1)
 			pos.x--
 		}
 
