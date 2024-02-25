@@ -119,6 +119,13 @@ func main() {
 		}
 
 		if in[0] == 'j' {
+            // TODO: Differntiate console x,y and file x,y to handle multi-line single lines
+            // Here we could then: 
+            // if len(line) > term.width {
+            //   file.y stays the same
+            //   console.y++
+            // }
+        
 			moveCurorDownBy(1)
 			pos.y++
 		}
