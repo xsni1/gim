@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
+	"log"
 
+	"github.com/gdamore/tcell"
 	"golang.org/x/term"
 )
 
@@ -68,101 +68,123 @@ func redraw(lines [][]byte, pos Position) {
 // TODO: Terminal physical lines != text lines - this is causing LOTS of bugs
 // TODO: When text goes to the next line old text gets overwritten
 // TODO: \t not interpreted correctly
+
+// 1. Store lines of text in an 2D array of bytes
+//    a) place manipulation of this buffer behind some structure/interface - so in the future it is easy to replace array implementation with rope for example
+// 2. Run main event loop which first (or not first) refreshes display and then checks for any new events
+// 3. tcell will be probably used as an library to handle terminal environment (ui, resizing, ansi sequences etc.) - it may be wise to abstract it behind some
+//    interface aswell, so I can easily later replace it with mine implementation of tui library
+// 4. I want to scroll both verticaly and horizontaly - need to store some offsets, so it is known exactly which lines (and its exact part) of text should be
+//    displayed on the screen
+//    a) how can I rerender only part of the screen so not whole thing is refreshed when user changes single letter? - for now it will be handled by tcell
+//
+//   tcell - use SetContent() to set each separate character and then at the end of the iteration of the main loop call Show() / Sync()
+
 func main() {
-	lines := [][]byte{}
-	insertMode := false
-	pos := Position{
-		tX: 1,
-		tY: 1,
-        fX: 1,
-        fY: 1,
+	s, err := tcell.NewScreen()
+	if err != nil {
+		log.Fatal(err)
 	}
+    fmt.Println(s)
 
-	// we have to restore it, otherwise terminal stays in raw mode
-	prevState, _ := term.MakeRaw(0)
+	// lines := [][]byte{}
+	// insertMode := false
+	// pos := Position{
+	// 	tX: 1,
+	// 	tY: 1,
+	// 	fX: 1,
+	// 	fY: 1,
+	// }
 
-	f, _ := os.Open("file")
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		lines = append(lines, s.Bytes())
-	}
+	// // we have to restore it, otherwise terminal stays in raw mode
+	// // we have to use raw mode, because in cooked (default) mode sends data to stdin when the user presses enter
+	// // raw mode is basically a combination of flags set in termios
+	// prevState, _ := term.MakeRaw(0)
 
-	// alternate xterm screen
-	fmt.Print("\u001B[?1049h")
-	defer func() {
-		term.Restore(0, prevState)
-		fmt.Print("\u001B[?1049l")
-	}()
+	// f, _ := os.Open("file")
+	// s := bufio.NewScanner(f)
+	// for s.Scan() {
+	// 	lines = append(lines, s.Bytes())
+	// }
 
-	redraw(lines, pos)
+	// // alternate xterm screen
+	// fmt.Print("\u001B[?1049h")
+	// defer func() {
+	// 	term.Restore(0, prevState)
+	// 	fmt.Print("\u001B[?1049l")
+	// }()
 
-	for {
-		// TODO: make it right
-		in := make([]byte, 10)
-		os.Stdin.Read(in)
+	// redraw(lines, pos)
 
-		if in[0] == 27 {
-			insertMode = false
-		}
+	// for {
+	// 	// TODO: make it right
+	// 	in := make([]byte, 10)
+	// 	os.Stdin.Read(in)
 
-		if insertMode {
-			fmt.Print(string(in[0]))
-			lines[pos.fY-1] = append(lines[pos.fY-1][:pos.fX], lines[pos.fY-1][pos.fX-1:]...)
-			lines[pos.fY-1][pos.fX-1] = in[0]
-			pos.tX++
-			// TODO: handle inserting last character in line
-			pos.fX++
+	// 	if in[0] == 27 {
+	// 		insertMode = false
+	// 	}
 
-			eraseLine()
-			moveCursorToColumn(1)
+	// 	if insertMode {
+	// 		fmt.Print(string(in[0]))
+	// 		lines[pos.fY-1] = append(lines[pos.fY-1][:pos.fX], lines[pos.fY-1][pos.fX-1:]...)
+	// 		lines[pos.fY-1][pos.fX-1] = in[0]
+	// 		pos.tX++
+	// 		// TODO: handle inserting last character in line
+	// 		pos.fX++
 
-			fmt.Print(string(lines[pos.tY-1]))
+	// 		eraseLine()
+	// 		moveCursorToColumn(1)
 
-			moveCursorTo(pos.tX, pos.tY)
+	// 		fmt.Print(string(lines[pos.tY-1]))
 
-			redraw(lines, pos)
-			continue
-		}
+	// 		moveCursorTo(pos.tX, pos.tY)
 
-		if in[0] == 'q' {
-			break
-		}
+	// 		redraw(lines, pos)
+	// 		continue
+	// 	}
 
-		if in[0] == 'j' {
-			// TODO: Differntiate console x,y and file x,y to handle multi-line single lines
-			// Here we could then:
-			// if len(line) > term.width {
-			//   file.y stays the same
-			//   console.y++
-			// }
+	// 	if in[0] == 'q' {
+	// 		break
+	// 	}
 
-			moveCurorDownBy(1)
-			pos.tY++
-			pos.fY++
-		}
+	// 	if in[0] == 'j' {
+	// // TODO: Can it be called only once? or only on resize?
+	// 		width, _, _ := term.GetSize(0)
+	// 		// TODO: Differntiate console x,y and file x,y to handle multi-line single lines
+	// 		// Here we could then:
+	// 		if len(lines[]) > width {
+	// 		  // file.y stays the same
+	// 		  console.y++
+	// 		}
 
-		if in[0] == 'k' {
-			moveCurorUpBy(1)
-			pos.tY--
-			pos.fY--
-		}
+	// 		moveCurorDownBy(1)
+	// 		pos.tY++
+	// 		pos.fY++
+	// 	}
 
-		if in[0] == 'l' {
-			moveCurorRightBy(1)
-			pos.tX++
-			pos.fX++
-		}
+	// 	if in[0] == 'k' {
+	// 		moveCurorUpBy(1)
+	// 		pos.tY--
+	// 		pos.fY--
+	// 	}
 
-		if in[0] == 'h' {
-			moveCurorLeftBy(1)
-			pos.tX--
-			pos.fX--
-		}
+	// 	if in[0] == 'l' {
+	// 		moveCurorRightBy(1)
+	// 		pos.tX++
+	// 		pos.fX++
+	// 	}
 
-		if in[0] == 'i' {
-			insertMode = true
-		}
+	// 	if in[0] == 'h' {
+	// 		moveCurorLeftBy(1)
+	// 		pos.tX--
+	// 		pos.fX--
+	// 	}
 
-		redraw(lines, pos)
-	}
+	// 	if in[0] == 'i' {
+	// 		insertMode = true
+	// 	}
+
+	// 	redraw(lines, pos)
+	// }
 }
