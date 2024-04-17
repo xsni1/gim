@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gdamore/tcell"
+	"github.com/xsni1/gim/editor"
 	"golang.org/x/term"
 )
 
@@ -71,7 +73,7 @@ func redraw(lines [][]byte, pos Position) {
 
 // 1. Store lines of text in an 2D array of bytes
 //    a) place manipulation of this buffer behind some structure/interface - so in the future it is easy to replace array implementation with rope for example
-// 2. Run main event loop which first (or not first) refreshes display and then checks for any new events
+// 2. Run main event loop, which first (or not first) refreshes display and then checks for any new events
 // 3. tcell will be probably used as an library to handle terminal environment (ui, resizing, ansi sequences etc.) - it may be wise to abstract it behind some
 //    interface aswell, so I can easily later replace it with mine implementation of tui library
 // 4. I want to scroll both verticaly and horizontaly - need to store some offsets, so it is known exactly which lines (and its exact part) of text should be
@@ -80,12 +82,36 @@ func redraw(lines [][]byte, pos Position) {
 //
 //   tcell - use SetContent() to set each separate character and then at the end of the iteration of the main loop call Show() / Sync()
 
+// tcell uses tput somehow to manipulate the terminal? or not it kind of implements its own tput by loading all the entries from terminfo?
+// Fini() method does rmcup/smcup - alternate view or something like that
+
 func main() {
 	s, err := tcell.NewScreen()
 	if err != nil {
 		log.Fatal(err)
 	}
-    fmt.Println(s)
+
+	err = s.Init()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	editor := editor.Editor{}
+
+	for {
+		switch e := s.PollEvent(); event := e.(type) {
+		case *tcell.EventKey:
+			editor.HandleEv()
+			fmt.Println(event.Key())
+			if event.Key() == tcell.KeyEsc {
+				s.Fini()
+				// defer statements are not called when os.Exit() used!
+				os.Exit(0)
+			}
+		case *tcell.EventResize:
+		case *tcell.EventMouse:
+		}
+	}
 
 	// lines := [][]byte{}
 	// insertMode := false
@@ -187,4 +213,6 @@ func main() {
 
 	// 	redraw(lines, pos)
 	// }
+
+	fmt.Println("end ex")
 }
