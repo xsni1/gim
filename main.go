@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/gdamore/tcell"
-	"github.com/xsni1/gim/debug"
 	"github.com/xsni1/gim/editor"
 )
 
@@ -37,16 +36,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-    debug.Debug()
+	// a := fmt.Sprintf("MAIN METHOD - %p\n", &s)
+	// debug.Debug(a)
 
 	editor := editor.NewEditor(s)
-	go editor.ListenEvents()
+	go editor.EditorLoop()
 	// graceful termination of program - sigterm, signals etc.
-
 	// dowiedziec sie jak w micro dzialaja key bindy - jak wylaczany jest program.
 	// czy kazdy pane/term/buff w/e to tam osobna goroutina?
 	for {
-		s.Show()
 		e := s.PollEvent()
 		if e != nil {
 			editor.Events <- e

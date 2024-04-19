@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gdamore/tcell"
+	"github.com/xsni1/gim/debug"
 	linesbuff "github.com/xsni1/gim/lines_buff"
 )
 
@@ -32,22 +33,27 @@ func NewEditor(s tcell.Screen) *Editor {
 		},
 	}
 
+	// a := fmt.Sprintf("NEW EDITOR METHOD - %p", &s)
+	// debug.Debug(a)
+
 	s.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 
 	return e
 }
 
-func (e *Editor) ListenEvents() {
+func (e *Editor) EditorLoop() {
 	for {
 		select {
 		case ev := <-e.Events:
 			switch event := ev.(type) {
 			case *tcell.EventKey:
 				e.handleKeyEvent(event)
-            case *tcell.EventResize:
-                fmt.Println("resize event")
+			case *tcell.EventResize:
+				// fmt.Println("resize event")
 			}
 		}
+
+        e.Screen.Sync()
 	}
 }
 
@@ -63,7 +69,9 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 		if e.insertMode {
 
 		} else {
-			e.cursorPos.y++
+			e.cursorPos.y += 1
+            debug.Debug(fmt.Sprint(e.cursorPos.y))
+            debug.Debug("\n")
 			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 		}
 	}
