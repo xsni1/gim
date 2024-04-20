@@ -23,6 +23,8 @@ func NewArrayBuffer(fileContent []byte) *ArrayBuffer {
 			// this may be the case where there is need for empty line at the very end
 			break
 		}
+        // this has to be copied - otherwise the subslice will share the same underlying array (as long as it fits in the capacity,
+        // because new underlying array will get allocated then)
         cp := make([]byte, len(fileContent[:n]))
         copy(cp, fileContent[:n])
 		lines = append(lines, Line{

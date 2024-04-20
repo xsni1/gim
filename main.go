@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gdamore/tcell"
 	"github.com/xsni1/gim/editor"
@@ -50,10 +52,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+    // make sure the terminal gets recovered to its proper state in case of exiting program not via os.Exit() (panic is such a case)
+    defer s.Fini()
+    sigs := make(chan os.Signal)
+    signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
+    go func() {
+        switch sig := <-sigs; sig {
+        case syscall.SIGINT:
+            s.Fini()
+            os.Exit(0)
+        case syscall.SIGTERM:
+            s.Fini()
+            os.Exit(0)
+        }
+    }()
 
 	editor := editor.NewEditor(s, fileContent)
 	go editor.EditorLoop()
-	// graceful termination of program - sigterm, signals etc.
 	// dowiedziec sie jak w micro dzialaja key bindy - jak wylaczany jest program.
 	// czy kazdy pane/term/buff w/e to tam osobna goroutina?
 	for {
