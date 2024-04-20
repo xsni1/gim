@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/gdamore/tcell"
 	"github.com/xsni1/gim/editor"
@@ -26,6 +28,19 @@ import (
 // Fini() method does rmcup/smcup - alternate view or something like that
 
 func main() {
+	var fileContent []byte
+	if len(os.Args) > 2 {
+		fileName := os.Args[1]
+		if fileName != "" {
+			bytes, err := os.ReadFile(fileName)
+			if err != nil {
+				fmt.Println("err reading file", err)
+				os.Exit(1)
+			}
+			fileContent = bytes
+		}
+	}
+
 	s, err := tcell.NewScreen()
 	if err != nil {
 		log.Fatal(err)
@@ -36,10 +51,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// a := fmt.Sprintf("MAIN METHOD - %p\n", &s)
-	// debug.Debug(a)
-
-	editor := editor.NewEditor(s)
+	editor := editor.NewEditor(s, fileContent)
 	go editor.EditorLoop()
 	// graceful termination of program - sigterm, signals etc.
 	// dowiedziec sie jak w micro dzialaja key bindy - jak wylaczany jest program.

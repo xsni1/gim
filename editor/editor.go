@@ -1,17 +1,20 @@
 package editor
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/gdamore/tcell"
-	"github.com/xsni1/gim/debug"
 	linesbuff "github.com/xsni1/gim/lines_buff"
 )
 
 type position struct {
 	x int
 	y int
+}
+
+type size struct {
+	width  int
+	height int
 }
 
 type Editor struct {
@@ -21,9 +24,10 @@ type Editor struct {
 
 	cursorPos  position
 	insertMode bool
+	size       size
 }
 
-func NewEditor(s tcell.Screen) *Editor {
+func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
 	e := &Editor{
 		Screen: s,
 		Events: make(chan tcell.Event),
@@ -31,10 +35,8 @@ func NewEditor(s tcell.Screen) *Editor {
 			x: 0,
 			y: 0,
 		},
+		Lines: linesbuff.NewArrayBuffer(fileContent),
 	}
-
-	// a := fmt.Sprintf("NEW EDITOR METHOD - %p", &s)
-	// debug.Debug(a)
 
 	s.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 
@@ -49,11 +51,14 @@ func (e *Editor) EditorLoop() {
 			case *tcell.EventKey:
 				e.handleKeyEvent(event)
 			case *tcell.EventResize:
-				// fmt.Println("resize event")
+				width, height := event.Size()
+				e.size.width = width
+				e.size.height = height
 			}
 		}
 
-        e.Screen.Sync()
+		// loop through all visible cells and call SetContent on each?
+		e.Screen.Sync()
 	}
 }
 
@@ -70,8 +75,6 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 
 		} else {
 			e.cursorPos.y += 1
-            debug.Debug(fmt.Sprint(e.cursorPos.y))
-            debug.Debug("\n")
 			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 		}
 	}
