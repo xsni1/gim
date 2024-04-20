@@ -57,8 +57,23 @@ func (e *Editor) EditorLoop() {
 			}
 		}
 
-		// loop through all visible cells and call SetContent on each?
+		e.Display()
 		e.Screen.Sync()
+	}
+}
+
+func (e *Editor) Display() {
+	pos := position{
+		x: 0,
+		y: 0,
+	}
+	for _, l := range e.Lines.Buffer() {
+		for _, c := range l.Content {
+            e.Screen.SetContent(pos.x, pos.y, rune(c), nil, tcell.StyleDefault)
+            pos.x++
+		}
+        pos.x = 0
+        pos.y++
 	}
 }
 

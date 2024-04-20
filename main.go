@@ -29,7 +29,7 @@ import (
 
 func main() {
 	var fileContent []byte
-	if len(os.Args) > 2 {
+	if len(os.Args) >= 2 {
 		fileName := os.Args[1]
 		if fileName != "" {
 			bytes, err := os.ReadFile(fileName)
