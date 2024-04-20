@@ -5,5 +5,6 @@ type Line struct {
 }
 
 type LinesBuffer interface {
-    Buffer() []Line
+	Buffer() []Line
+	Insert(r rune, x, y int)
 }

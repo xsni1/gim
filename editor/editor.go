@@ -17,12 +17,18 @@ type size struct {
 	height int
 }
 
+type offset struct {
+	x int
+	y int
+}
+
 type Editor struct {
 	Lines  linesbuff.LinesBuffer
 	Screen tcell.Screen
 	Events chan tcell.Event
 
 	cursorPos  position
+	offset     offset
 	insertMode bool
 	size       size
 }
@@ -69,11 +75,11 @@ func (e *Editor) Display() {
 	}
 	for _, l := range e.Lines.Buffer() {
 		for _, c := range l.Content {
-            e.Screen.SetContent(pos.x, pos.y, rune(c), nil, tcell.StyleDefault)
-            pos.x++
+			e.Screen.SetContent(pos.x, pos.y, rune(c), nil, tcell.StyleDefault)
+			pos.x++
 		}
-        pos.x = 0
-        pos.y++
+		pos.x = 0
+		pos.y++
 	}
 }
 
@@ -87,9 +93,34 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 		e.insertMode = true
 	case 'j':
 		if e.insertMode {
-
+			e.Lines.Insert('j', e.cursorPos.x, e.cursorPos.y)
+			e.cursorPos.x += 1
+			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 		} else {
 			e.cursorPos.y += 1
+			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+		}
+	case 'k':
+		if e.insertMode {
+			e.Lines.Insert('k', e.cursorPos.x, e.cursorPos.y)
+			e.cursorPos.x += 1
+			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+		} else {
+			e.cursorPos.y -= 1
+			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+		}
+	case 'h':
+		if e.insertMode {
+
+		} else {
+			e.cursorPos.x -= 1
+			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+		}
+	case 'l':
+		if e.insertMode {
+
+		} else {
+			e.cursorPos.x += 1
 			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 		}
 	}

@@ -33,3 +33,10 @@ func NewArrayBuffer(fileContent []byte) *ArrayBuffer {
 		lines: lines,
 	}
 }
+
+// look for ways to optimize - over-allocate capacity?
+// also check how to profile such things
+func (ab *ArrayBuffer) Insert(r rune, x, y int) {
+    line := &ab.lines[y]
+    line.Content = append(line.Content[:x], append([]byte{byte(r)}, line.Content[x:]...)...)
+}
