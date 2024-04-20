@@ -88,43 +88,37 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 		e.quit()
 	}
 
-	switch event.Rune() {
-	case 'i':
+	if !e.insertMode && event.Rune() == 'i' {
 		e.insertMode = true
-	case 'j':
-		if e.insertMode {
-			e.Lines.Insert('j', e.cursorPos.x, e.cursorPos.y)
-			e.cursorPos.x += 1
-			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
-		} else {
-			e.cursorPos.y += 1
-			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
-		}
-	case 'k':
-		if e.insertMode {
-			e.Lines.Insert('k', e.cursorPos.x, e.cursorPos.y)
-			e.cursorPos.x += 1
-			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
-		} else {
-			e.cursorPos.y -= 1
-			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
-		}
-	case 'h':
-		if e.insertMode {
-
-		} else {
-			e.cursorPos.x -= 1
-			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
-		}
-	case 'l':
-		if e.insertMode {
-
-		} else {
-			e.cursorPos.x += 1
-			e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
-		}
+		return
 	}
 
+	if e.insertMode {
+		e.insertChar(event.Rune())
+	}
+
+	// cursor movement
+	switch event.Rune() {
+	case 'j':
+		e.cursorPos.y += 1
+		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+	case 'k':
+		e.cursorPos.y -= 1
+		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+	case 'h':
+		e.cursorPos.x -= 1
+		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+	case 'l':
+		e.cursorPos.x += 1
+		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+	}
+
+}
+
+func (e *Editor) insertChar(c rune) {
+	e.Lines.Insert(c, e.cursorPos.x, e.cursorPos.y)
+	e.cursorPos.x += 1
+	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
 
 func (e *Editor) quit() {
