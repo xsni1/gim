@@ -9,7 +9,7 @@ type ArrayBuffer struct {
 }
 
 func (ab *ArrayBuffer) Buffer() []Line {
-    return ab.lines
+	return ab.lines
 }
 
 // alternatively reader could be used here, probably memory overhead would be lower?
@@ -37,6 +37,10 @@ func NewArrayBuffer(fileContent []byte) *ArrayBuffer {
 // look for ways to optimize - over-allocate capacity?
 // also check how to profile such things
 func (ab *ArrayBuffer) Insert(r rune, x, y int) {
-    line := &ab.lines[y]
-    line.Content = append(line.Content[:x], append([]byte{byte(r)}, line.Content[x:]...)...)
+	line := &ab.lines[y]
+	line.Content = append(line.Content[:x], append([]byte{byte(r)}, line.Content[x:]...)...)
+}
+
+func (ab *ArrayBuffer) Get(x, y int) byte {
+	return ab.lines[y].Content[x]
 }

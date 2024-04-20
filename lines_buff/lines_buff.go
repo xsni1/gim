@@ -7,4 +7,5 @@ type Line struct {
 type LinesBuffer interface {
 	Buffer() []Line
 	Insert(r rune, x, y int)
+	Get(x, y int) byte
 }

@@ -41,6 +41,10 @@ func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
 			x: 0,
 			y: 0,
 		},
+        offset: offset{
+            x: 0,
+            y: 0,
+        },
 		Lines: linesbuff.NewArrayBuffer(fileContent),
 	}
 
@@ -73,9 +77,16 @@ func (e *Editor) Display() {
 		x: 0,
 		y: 0,
 	}
-	for _, l := range e.Lines.Buffer() {
-		for _, c := range l.Content {
-			e.Screen.SetContent(pos.x, pos.y, rune(c), nil, tcell.StyleDefault)
+
+	for y := e.offset.y; y < e.size.height; y++ {
+		if y >= len(e.Lines.Buffer()) {
+			break
+		}
+		for x := e.offset.x; x < e.size.width; x++ {
+            if x >= len(e.Lines.Buffer()[y].Content) {
+                break
+            }
+			e.Screen.SetContent(x, y, rune(e.Lines.Get(x, y)), nil, tcell.StyleDefault)
 			pos.x++
 		}
 		pos.x = 0
@@ -95,6 +106,7 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 
 	if e.insertMode {
 		e.insertChar(event.Rune())
+        return
 	}
 
 	// cursor movement
