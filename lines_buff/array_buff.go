@@ -19,12 +19,15 @@ func NewArrayBuffer(fileContent []byte) *ArrayBuffer {
 		// TODO: \r\n support
 		n := slices.Index(fileContent, '\n')
 		if n == -1 {
+			// does linux add \n to eof?
 			// this may be the case where there is need for empty line at the very end
 			break
 		}
+        cp := make([]byte, len(fileContent[:n]))
+        copy(cp, fileContent[:n])
 		lines = append(lines, Line{
 			// do i need \n character in line array?
-			Content: fileContent[:n],
+			Content: cp,
 		})
 		fileContent = fileContent[n+1:]
 	}
