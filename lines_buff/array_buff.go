@@ -23,10 +23,10 @@ func NewArrayBuffer(fileContent []byte) *ArrayBuffer {
 			// this may be the case where there is need for empty line at the very end
 			break
 		}
-        // this has to be copied - otherwise the subslice will share the same underlying array (as long as it fits in the capacity,
-        // because new underlying array will get allocated then)
-        cp := make([]byte, len(fileContent[:n]))
-        copy(cp, fileContent[:n])
+		// this has to be copied - otherwise the subslice will share the same underlying array (as long as it fits in the capacit ,
+		// because new underlying array will get allocated then)
+		cp := make([]byte, len(fileContent[:n+1]))
+		copy(cp, fileContent[:n+1])
 		lines = append(lines, Line{
 			// do i need \n character in line array?
 			Content: cp,
@@ -46,6 +46,15 @@ func (ab *ArrayBuffer) Insert(r rune, x, y int) {
 	line.Content = append(line.Content[:x], append([]byte{byte(r)}, line.Content[x:]...)...)
 }
 
-func (ab *ArrayBuffer) Get(x, y int) byte {
+func (ab *ArrayBuffer) GetChar(x, y int) byte {
 	return ab.lines[y].Content[x]
 }
+
+func (ab *ArrayBuffer) GetRow(y int) []byte {
+	return ab.lines[y].Content
+}
+
+// func (ab *ArrayBuffer) GetCol(x int) []byte {
+// 	return ab.lines[y].Content
+// }
+

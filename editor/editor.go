@@ -41,10 +41,10 @@ func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
 			x: 0,
 			y: 0,
 		},
-        offset: offset{
-            x: 0,
-            y: 0,
-        },
+		offset: offset{
+			x: 0,
+			y: 0,
+		},
 		Lines: linesbuff.NewArrayBuffer(fileContent),
 	}
 
@@ -67,6 +67,7 @@ func (e *Editor) EditorLoop() {
 			}
 		}
 
+		// e.Screen.Clear()
 		e.Display()
 		e.Screen.Sync()
 	}
@@ -77,16 +78,18 @@ func (e *Editor) Display() {
 		x: 0,
 		y: 0,
 	}
-
-	for y := e.offset.y; y < e.size.height; y++ {
+	for y := e.offset.y; y < e.size.height+e.offset.y; y++ {
 		if y >= len(e.Lines.Buffer()) {
 			break
 		}
-		for x := e.offset.x; x < e.size.width; x++ {
-            if x >= len(e.Lines.Buffer()[y].Content) {
-                break
-            }
-			e.Screen.SetContent(x, y, rune(e.Lines.Get(x, y)), nil, tcell.StyleDefault)
+		for x := e.offset.x; x < e.size.width+e.offset.x; x++ {
+			if x >= len(e.Lines.Buffer()[y].Content) {
+				e.Screen.SetContent(pos.x, pos.y, rune(' '), nil, tcell.StyleDefault)
+				pos.x++
+				continue
+				// break
+			}
+			e.Screen.SetContent(pos.x, pos.y, rune(e.Lines.GetChar(x, y)), nil, tcell.StyleDefault)
 			pos.x++
 		}
 		pos.x = 0
@@ -105,23 +108,49 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 	}
 
 	if e.insertMode {
+		// if event.Key() == tcell.KeyEnter {
+		// 	e.Lines.Insert(c, e.cursorPos.x, e.cursorPos.y)
+		// 	e.cursorPos.x += 1
+		// 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+		// }
 		e.insertChar(event.Rune())
-        return
+		return
 	}
 
+	// TODO: CHECK IF EOL CHAR IS VISIBLE IN EDITOR
 	// cursor movement
 	switch event.Rune() {
 	case 'j':
+		if len(e.Lines.Buffer())-1 <= e.cursorPos.y {
+			return
+		}
 		e.cursorPos.y += 1
+		if e.cursorPos.y > e.size.height-1 {
+			e.offset.y++
+			e.cursorPos.y -= 1
+		}
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'k':
+		if e.cursorPos.y <= 0 {
+			return
+		}
 		e.cursorPos.y -= 1
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'h':
+		if e.cursorPos.x <= 0 {
+			return
+		}
 		e.cursorPos.x -= 1
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'l':
+		if len(e.Lines.GetRow(e.cursorPos.y))-1 <= e.cursorPos.x {
+			return
+		}
 		e.cursorPos.x += 1
+		if e.cursorPos.x > e.size.width-1 {
+			e.offset.x++
+			e.cursorPos.x -= 1
+		}
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	}
 
