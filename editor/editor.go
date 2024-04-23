@@ -31,6 +31,7 @@ type Editor struct {
 	offset     offset
 	insertMode bool
 	size       size
+	desiredCol int
 }
 
 func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
@@ -122,31 +123,32 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 	// cursor movement
 	switch event.Rune() {
 	case 'j':
-		if e.Lines.LinesNum()-1 <= e.cursorPos.y {
+		if e.Lines.LinesNum()-1 <= e.cursorPos.y+e.offset.y {
 			return
 		}
-		e.cursorPos.y += 1
+
+		e.cursorPos.y++
 		if e.cursorPos.y > e.size.height-1 {
 			e.offset.y++
-			e.cursorPos.y -= 1
+			e.cursorPos.y--
 		}
-		if len(e.Lines.GetRow(e.cursorPos.y))-1 <= e.cursorPos.x+e.offset.x {
-			if e.offset.x+e.size.width > len(e.Lines.GetRow(e.cursorPos.y))-1 {
-				if e.size.width > len(e.Lines.GetRow(e.cursorPos.y))-1 {
+
+		if len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 <= e.cursorPos.x+e.offset.x {
+			if e.offset.x+e.size.width > len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 {
+				if e.size.width > len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 {
 					e.offset.x = 0
 				} else {
 					// move view to the center:
 					// TODO: move this to separate method
 					// i want to center it only if the line we are going to is not visible on the screen
-					if e.offset.x >= len(e.Lines.GetRow(e.cursorPos.y))-1 {
-						e.offset.x = len(e.Lines.GetRow(e.cursorPos.y)) - 1 - (e.size.width / 2)
+					if e.offset.x >= len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 {
+						e.offset.x = len(e.Lines.GetRow(e.cursorPos.y+e.offset.y)) - 1 - (e.size.width / 2)
 					}
-                    
 				}
 			}
-
-			e.cursorPos.x = len(e.Lines.GetRow(e.cursorPos.y)) - 1 - e.offset.x
+			e.cursorPos.x = len(e.Lines.GetRow(e.cursorPos.y+e.offset.y)) - 1 - e.offset.x
 		}
+
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'k':
 		if e.cursorPos.y <= 0 {
