@@ -151,10 +151,16 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'k':
-		if e.cursorPos.y <= 0 {
+		if e.cursorPos.y+e.offset.y <= 0 {
 			return
 		}
-		e.cursorPos.y -= 1
+
+        if e.cursorPos.y == 0 && e.offset.y > 0 {
+            e.cursorPos.y++
+            e.offset.y--
+        }
+
+		e.cursorPos.y--
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'h':
 		if e.cursorPos.x+e.offset.x <= 0 {
@@ -167,7 +173,7 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 		}
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'l':
-		if len(e.Lines.GetRow(e.cursorPos.y))-1 <= e.cursorPos.x+e.offset.x {
+		if len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 <= e.cursorPos.x+e.offset.x {
 			return
 		}
 		e.cursorPos.x += 1
