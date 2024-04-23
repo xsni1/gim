@@ -98,6 +98,40 @@ func (e *Editor) Display() {
 	}
 }
 
+func (e *Editor) drawGutter() {
+
+}
+
+func (e *Editor) clampPosHorizontal() {
+	if len(e.Lines.GetRow(e.absPos().y))-1 <= e.absPos().x {
+		if e.offset.x+e.size.width > len(e.Lines.GetRow(e.absPos().y))-1 {
+			if e.size.width > len(e.Lines.GetRow(e.absPos().y))-1 {
+				e.offset.x = 0
+			} else {
+				// move view to the center:
+				// TODO: move this to separate method
+				// i want to center it only if the line we are going to is not visible on the screen
+				if e.offset.x >= len(e.Lines.GetRow(e.absPos().y))-1 {
+					e.offset.x = len(e.Lines.GetRow(e.absPos().y)) - 1 - (e.size.width / 2)
+				}
+			}
+		}
+		e.cursorPos.x = len(e.Lines.GetRow(e.absPos().y)) - 1 - e.offset.x
+	}
+}
+
+func (e *Editor) absPos() position {
+	return position{
+		y: e.cursorPos.y + e.offset.y,
+		x: e.cursorPos.x + e.offset.x,
+	}
+}
+
+// func (e *Editor) relPos() int {
+//     return e.e
+// }
+
+// TODO: add methods for getting current position relative and absolute
 // TODO: add key to center the view
 func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 	if event.Key() == tcell.KeyESC {
@@ -133,21 +167,7 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 			e.cursorPos.y--
 		}
 
-		if len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 <= e.cursorPos.x+e.offset.x {
-			if e.offset.x+e.size.width > len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 {
-				if e.size.width > len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 {
-					e.offset.x = 0
-				} else {
-					// move view to the center:
-					// TODO: move this to separate method
-					// i want to center it only if the line we are going to is not visible on the screen
-					if e.offset.x >= len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 {
-						e.offset.x = len(e.Lines.GetRow(e.cursorPos.y+e.offset.y)) - 1 - (e.size.width / 2)
-					}
-				}
-			}
-			e.cursorPos.x = len(e.Lines.GetRow(e.cursorPos.y+e.offset.y)) - 1 - e.offset.x
-		}
+        e.clampPosHorizontal()
 
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'k':
@@ -155,27 +175,13 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 			return
 		}
 
-        if e.cursorPos.y == 0 && e.offset.y > 0 {
-            e.cursorPos.y++
-            e.offset.y--
-        }
+		if e.cursorPos.y == 0 && e.offset.y > 0 {
+			e.cursorPos.y++
+			e.offset.y--
+		}
 		e.cursorPos.y--
 
-		if len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 <= e.cursorPos.x+e.offset.x {
-			if e.offset.x+e.size.width > len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 {
-				if e.size.width > len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 {
-					e.offset.x = 0
-				} else {
-					// move view to the center:
-					// TODO: move this to separate method
-					// i want to center it only if the line we are going to is not visible on the screen
-					if e.offset.x >= len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 {
-						e.offset.x = len(e.Lines.GetRow(e.cursorPos.y+e.offset.y)) - 1 - (e.size.width / 2)
-					}
-				}
-			}
-			e.cursorPos.x = len(e.Lines.GetRow(e.cursorPos.y+e.offset.y)) - 1 - e.offset.x
-		}
+        e.clampPosHorizontal()
 
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'h':
