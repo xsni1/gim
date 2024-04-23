@@ -79,11 +79,11 @@ func (e *Editor) Display() {
 		y: 0,
 	}
 	for y := e.offset.y; y < e.size.height+e.offset.y; y++ {
-		if y >= len(e.Lines.Buffer()) {
+		if y >= e.Lines.LinesNum() {
 			break
 		}
 		for x := e.offset.x; x < e.size.width+e.offset.x; x++ {
-			if x >= len(e.Lines.Buffer()[y].Content) {
+			if x >= len(e.Lines.GetRow(y)) {
 				e.Screen.SetContent(pos.x, pos.y, rune(' '), nil, tcell.StyleDefault)
 				pos.x++
 				continue
@@ -97,6 +97,7 @@ func (e *Editor) Display() {
 	}
 }
 
+// TODO: add key to center the view
 func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 	if event.Key() == tcell.KeyESC {
 		e.quit()
@@ -121,13 +122,30 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 	// cursor movement
 	switch event.Rune() {
 	case 'j':
-		if len(e.Lines.Buffer())-1 <= e.cursorPos.y {
+		if e.Lines.LinesNum()-1 <= e.cursorPos.y {
 			return
 		}
 		e.cursorPos.y += 1
 		if e.cursorPos.y > e.size.height-1 {
 			e.offset.y++
 			e.cursorPos.y -= 1
+		}
+		if len(e.Lines.GetRow(e.cursorPos.y))-1 <= e.cursorPos.x+e.offset.x {
+			if e.offset.x+e.size.width > len(e.Lines.GetRow(e.cursorPos.y))-1 {
+				if e.size.width > len(e.Lines.GetRow(e.cursorPos.y))-1 {
+					e.offset.x = 0
+				} else {
+					// move view to the center:
+					// TODO: move this to separate method
+					// i want to center it only if the line we are going to is not visible on the screen
+					if e.offset.x >= len(e.Lines.GetRow(e.cursorPos.y))-1 {
+						e.offset.x = len(e.Lines.GetRow(e.cursorPos.y)) - 1 - (e.size.width / 2)
+					}
+                    
+				}
+			}
+
+			e.cursorPos.x = len(e.Lines.GetRow(e.cursorPos.y)) - 1 - e.offset.x
 		}
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'k':
@@ -137,17 +155,21 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 		e.cursorPos.y -= 1
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'h':
-		if e.cursorPos.x <= 0 {
+		if e.cursorPos.x+e.offset.x <= 0 {
 			return
 		}
 		e.cursorPos.x -= 1
+		if e.cursorPos.x == 0 && e.offset.x > 0 {
+			e.offset.x--
+			e.cursorPos.x += 1
+		}
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'l':
-		if len(e.Lines.GetRow(e.cursorPos.y))-1 <= e.cursorPos.x {
+		if len(e.Lines.GetRow(e.cursorPos.y))-1 <= e.cursorPos.x+e.offset.x {
 			return
 		}
 		e.cursorPos.x += 1
-		if e.cursorPos.x > e.size.width-1 {
+		if e.cursorPos.x >= e.size.width {
 			e.offset.x++
 			e.cursorPos.x -= 1
 		}
