@@ -27,11 +27,12 @@ type Editor struct {
 	Screen tcell.Screen
 	Events chan tcell.Event
 
-	cursorPos  position
-	offset     offset
-	insertMode bool
-	size       size
-	desiredCol int
+	cursorPos   position
+	offset      offset
+	insertMode  bool
+	size        size
+	desiredCol  int
+	gutterWidth int
 }
 
 func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
@@ -47,7 +48,9 @@ func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
 			y: 0,
 		},
 		Lines: linesbuff.NewArrayBuffer(fileContent),
+        gutterWidth: 3,
 	}
+    e.cursorPos.x = e.gutterWidth
 
 	s.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 
@@ -68,7 +71,6 @@ func (e *Editor) EditorLoop() {
 			}
 		}
 
-		// e.Screen.Clear()
 		e.Display()
 		e.Screen.Sync()
 	}
@@ -76,7 +78,7 @@ func (e *Editor) EditorLoop() {
 
 func (e *Editor) Display() {
 	pos := position{
-		x: 0,
+		x: e.gutterWidth,
 		y: 0,
 	}
 	for y := e.offset.y; y < e.size.height+e.offset.y; y++ {
@@ -93,17 +95,24 @@ func (e *Editor) Display() {
 			e.Screen.SetContent(pos.x, pos.y, rune(e.Lines.GetChar(x, y)), nil, tcell.StyleDefault)
 			pos.x++
 		}
-		pos.x = 0
+		pos.x = e.gutterWidth
 		pos.y++
 	}
+	e.drawGutter()
 }
 
 func (e *Editor) drawGutter() {
+	for y := 0; y < e.Lines.LinesNum(); y++ {
+		e.Screen.SetContent(0, y, rune('1'), nil, tcell.StyleDefault)
+	}
 
+	for y := e.Lines.LinesNum(); y < e.size.height; y++ {
+		e.Screen.SetContent(0, y, rune('~'), nil, tcell.StyleDefault)
+	}
 }
 
-func (e *Editor) clampPosHorizontal() {
-	if len(e.Lines.GetRow(e.absPos().y))-1 <= e.absPos().x {
+func (e *Editor) clampPosX() {
+	if len(e.Lines.GetRow(e.absPos().y))-1 + e.gutterWidth <= e.absPos().x {
 		if e.offset.x+e.size.width > len(e.Lines.GetRow(e.absPos().y))-1 {
 			if e.size.width > len(e.Lines.GetRow(e.absPos().y))-1 {
 				e.offset.x = 0
@@ -116,7 +125,7 @@ func (e *Editor) clampPosHorizontal() {
 				}
 			}
 		}
-		e.cursorPos.x = len(e.Lines.GetRow(e.absPos().y)) - 1 - e.offset.x
+		e.cursorPos.x = len(e.Lines.GetRow(e.absPos().y)) - 1 - e.offset.x + e.gutterWidth
 	}
 }
 
@@ -126,10 +135,6 @@ func (e *Editor) absPos() position {
 		x: e.cursorPos.x + e.offset.x,
 	}
 }
-
-// func (e *Editor) relPos() int {
-//     return e.e
-// }
 
 // TODO: add methods for getting current position relative and absolute
 // TODO: add key to center the view
@@ -144,16 +149,10 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 	}
 
 	if e.insertMode {
-		// if event.Key() == tcell.KeyEnter {
-		// 	e.Lines.Insert(c, e.cursorPos.x, e.cursorPos.y)
-		// 	e.cursorPos.x += 1
-		// 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
-		// }
 		e.insertChar(event.Rune())
 		return
 	}
 
-	// TODO: CHECK IF EOL CHAR IS VISIBLE IN EDITOR
 	// cursor movement
 	switch event.Rune() {
 	case 'j':
@@ -167,7 +166,7 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 			e.cursorPos.y--
 		}
 
-        e.clampPosHorizontal()
+		e.clampPosX()
 
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'k':
@@ -181,11 +180,11 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 		}
 		e.cursorPos.y--
 
-        e.clampPosHorizontal()
+		e.clampPosX()
 
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'h':
-		if e.cursorPos.x+e.offset.x <= 0 {
+		if e.absPos().x <= 0 {
 			return
 		}
 		e.cursorPos.x -= 1
@@ -195,7 +194,7 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 		}
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'l':
-		if len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1 <= e.cursorPos.x+e.offset.x {
+		if len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1+e.gutterWidth <= e.absPos().x {
 			return
 		}
 		e.cursorPos.x += 1
