@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/gdamore/tcell"
@@ -47,10 +48,10 @@ func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
 			x: 0,
 			y: 0,
 		},
-		Lines: linesbuff.NewArrayBuffer(fileContent),
-        gutterWidth: 3,
+		Lines:       linesbuff.NewArrayBuffer(fileContent),
+		gutterWidth: 3,
 	}
-    e.cursorPos.x = e.gutterWidth
+	e.cursorPos.x = e.gutterWidth
 
 	s.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 
@@ -103,7 +104,9 @@ func (e *Editor) Display() {
 
 func (e *Editor) drawGutter() {
 	for y := 0; y < e.Lines.LinesNum(); y++ {
-		e.Screen.SetContent(0, y, rune('1'), nil, tcell.StyleDefault)
+		for i, d := range fmt.Sprint(y+1) {
+			e.Screen.SetContent(i, y, rune(d), nil, tcell.StyleDefault)
+		}
 	}
 
 	for y := e.Lines.LinesNum(); y < e.size.height; y++ {
@@ -112,7 +115,7 @@ func (e *Editor) drawGutter() {
 }
 
 func (e *Editor) clampPosX() {
-	if len(e.Lines.GetRow(e.absPos().y))-1 + e.gutterWidth <= e.absPos().x {
+	if len(e.Lines.GetRow(e.absPos().y))-1+e.gutterWidth <= e.absPos().x {
 		if e.offset.x+e.size.width > len(e.Lines.GetRow(e.absPos().y))-1 {
 			if e.size.width > len(e.Lines.GetRow(e.absPos().y))-1 {
 				e.offset.x = 0
@@ -156,7 +159,7 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 	// cursor movement
 	switch event.Rune() {
 	case 'j':
-		if e.Lines.LinesNum()-1 <= e.cursorPos.y+e.offset.y {
+		if e.Lines.LinesNum()-1 <= e.absPos().y {
 			return
 		}
 
@@ -170,7 +173,7 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'k':
-		if e.cursorPos.y+e.offset.y <= 0 {
+		if e.absPos().y <= 0 {
 			return
 		}
 
@@ -184,17 +187,17 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'h':
-		if e.absPos().x <= 0 {
+		if e.absPos().x-e.gutterWidth <= 0 {
 			return
 		}
 		e.cursorPos.x -= 1
-		if e.cursorPos.x == 0 && e.offset.x > 0 {
+		if e.cursorPos.x-e.gutterWidth+1 == 0 && e.offset.x > 0 {
 			e.offset.x--
 			e.cursorPos.x += 1
 		}
 		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 	case 'l':
-		if len(e.Lines.GetRow(e.cursorPos.y+e.offset.y))-1+e.gutterWidth <= e.absPos().x {
+		if len(e.Lines.GetRow(e.absPos().y))-1+e.gutterWidth <= e.absPos().x {
 			return
 		}
 		e.cursorPos.x += 1
