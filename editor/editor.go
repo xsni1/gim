@@ -28,12 +28,13 @@ type Editor struct {
 	Screen tcell.Screen
 	Events chan tcell.Event
 
-	cursorPos   position
-	offset      offset
-	insertMode  bool
-	size        size
-	desiredCol  int
-	gutterWidth int
+	cursorPos     position
+	offset        offset
+	insertMode    bool
+	size          size
+	desiredCol    int
+	gutterWidth   int
+	infoBarHeight int
 }
 
 func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
@@ -100,17 +101,39 @@ func (e *Editor) Display() {
 		pos.y++
 	}
 	e.drawGutter()
+	e.drawInfoBar()
 }
 
 func (e *Editor) drawGutter() {
 	for y := 0; y < e.Lines.LinesNum(); y++ {
-		for i, d := range fmt.Sprint(y+1) {
+		for i, d := range fmt.Sprint(y + 1) {
 			e.Screen.SetContent(i, y, rune(d), nil, tcell.StyleDefault)
 		}
 	}
 
 	for y := e.Lines.LinesNum(); y < e.size.height; y++ {
 		e.Screen.SetContent(0, y, rune('~'), nil, tcell.StyleDefault)
+	}
+}
+
+func (e *Editor) drawInfoBar() {
+	mode := "NORMAL"
+	if e.insertMode {
+		mode = "INSERT"
+	}
+	for x, l := range mode {
+		e.Screen.SetContent(x, e.size.height-1, l, nil, tcell.StyleDefault)
+		x++
+	}
+
+	// idk if this loop is even needed tbh
+	for x := len(mode); x < e.size.width; x++ {
+		e.Screen.SetContent(x, e.size.height-1, ' ', nil, tcell.StyleDefault)
+	}
+
+	pos := fmt.Sprintf("%d/%d", e.cursorPos.x, e.cursorPos.y)
+	for x := e.size.width - len(pos); x < e.size.width; x++ {
+		e.Screen.SetContent(x, e.size.height-1, rune(pos[x-(e.size.width-len(pos))]), nil, tcell.StyleDefault)
 	}
 }
 
