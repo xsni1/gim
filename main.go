@@ -29,6 +29,17 @@ import (
 // tcell uses tput somehow to manipulate the terminal? or not it kind of implements its own tput by loading all the entries from terminfo?
 // Fini() method does rmcup/smcup - alternate view or something like that
 
+// Key bindings:
+//   - define a map with default keybindings where key is an action name and value is pointer to a function
+//      - "CursorUp": *editor.CursorUp (so this is something that lives in code and is compiled)
+//   - another map that binds action name with a keypress is needed
+//      - "CursorUp": "K" (in-code map that can be overwritten using file configuration)
+//   - user can provide some external configuration to override default keybindings by providing a key with action name and value of keypress/es
+//      - "CursorUp": "Z" (file configuration)
+//   - we should be able to define more complex keybindings where user needs to provide a sequence of keypresses - use trie data structure
+//   - also support for ctrl/alt mod keypresses (tcell probably supports detecting it)
+
+
 func main() {
 	var fileContent []byte
 	if len(os.Args) >= 2 {
