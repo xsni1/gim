@@ -33,7 +33,7 @@ type Editor struct {
 	offset         offset
 	insertMode     bool
 	size           size
-	desiredCol     int
+	targetCol      int
 	gutterWidth    int
 	infoBarHeight  int
 	infoBarContent string
@@ -195,7 +195,7 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 
 	if e.insertMode && event.Key() == tcell.KeyEnter {
 		e.Lines.NewLine(e.cursorPos.x-e.gutterWidth, e.cursorPos.y)
-        e.cursorDown()
+		e.cursorDown()
 		return
 	}
 
@@ -207,6 +207,8 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 	e.KeyBindings.Get(string(event.Name()))()
 }
 
+// lewo i prawo resetuje kolumne i ?insert?
+// jedna zmienna ktora zostaje taka sama az do resetu
 func (e *Editor) cursorUp() {
 	if e.absPos().y <= 0 {
 		return
@@ -218,7 +220,15 @@ func (e *Editor) cursorUp() {
 	}
 	e.cursorPos.y--
 
+    if e.cursorPos.x < e.targetCol {
+        e.cursorPos.x = e.targetCol
+    }
+
 	e.clampPosX()
+
+    if e.cursorPos.x > e.targetCol {
+        e.targetCol = e.cursorPos.x
+    }
 
 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
@@ -234,7 +244,15 @@ func (e *Editor) cursorDown() {
 		e.cursorPos.y--
 	}
 
+    if e.cursorPos.x < e.targetCol {
+        e.cursorPos.x = e.targetCol
+    }
+
 	e.clampPosX()
+
+    if e.cursorPos.x > e.targetCol {
+        e.targetCol = e.cursorPos.x
+    }
 
 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
@@ -248,6 +266,7 @@ func (e *Editor) cursorLeft() {
 		e.offset.x--
 		e.cursorPos.x += 1
 	}
+    e.targetCol = 0
 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
 
@@ -260,6 +279,7 @@ func (e *Editor) cursorRight() {
 		e.offset.x++
 		e.cursorPos.x -= 1
 	}
+    e.targetCol = 0
 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
 
