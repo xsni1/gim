@@ -188,19 +188,22 @@ func (e *Editor) absPos() position {
 // TODO: add methods for getting current position relative and absolute
 // TODO: add key to center the view
 func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
-    if e.insertMode && event.Key() == tcell.KeyRune {
-        e.insertChar(event.Rune())
-        return
-    }
+	if e.insertMode && event.Key() == tcell.KeyRune {
+		e.insertChar(event.Rune())
+		return
+	}
 
-	// if printable char
+	if e.insertMode && event.Key() == tcell.KeyEnter {
+		e.Lines.NewLine(e.cursorPos.x-e.gutterWidth, e.cursorPos.y)
+		return
+	}
+
 	if event.Key() == tcell.KeyRune {
 		e.KeyBindings.Get(string(event.Rune()))()
 		return
 	}
 
 	e.KeyBindings.Get(string(event.Name()))()
-
 }
 
 func (e *Editor) cursorUp() {
@@ -260,8 +263,12 @@ func (e *Editor) cursorRight() {
 }
 
 func (e *Editor) insertChar(c rune) {
-	e.Lines.Insert(c, e.cursorPos.x, e.cursorPos.y)
+	e.Lines.Insert(c, e.absPos().x-e.gutterWidth, e.cursorPos.y)
 	e.cursorPos.x += 1
+	if e.cursorPos.x > e.size.width-1 {
+		e.offset.x++
+		e.cursorPos.x -= 1
+	}
 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
 

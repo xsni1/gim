@@ -9,4 +9,5 @@ type LinesBuffer interface {
 	GetChar(x, y int) byte
 	GetRow(y int) []byte
 	LinesNum() int
+	NewLine(x, y int)
 }
