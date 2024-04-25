@@ -24,17 +24,34 @@ type offset struct {
 }
 
 type Editor struct {
-	Lines  linesbuff.LinesBuffer
-	Screen tcell.Screen
-	Events chan tcell.Event
+	Lines       linesbuff.LinesBuffer
+	Screen      tcell.Screen
+	Events      chan tcell.Event
+	KeyBindings KeyBinder
 
-	cursorPos     position
-	offset        offset
-	insertMode    bool
-	size          size
-	desiredCol    int
-	gutterWidth   int
-	infoBarHeight int
+	cursorPos      position
+	offset         offset
+	insertMode     bool
+	size           size
+	desiredCol     int
+	gutterWidth    int
+	infoBarHeight  int
+	infoBarContent string
+}
+
+// {action name -> function pointer} map.
+// used to determine which function should be called when such action occurs.
+// actions occur during key presses.
+func (e *Editor) actionsMap() ActionsMap {
+	return ActionsMap{
+		"CursorUp":    e.cursorUp,
+		"CursorDown":  e.cursorDown,
+		"CursorLeft":  e.cursorLeft,
+		"CursorRight": e.cursorRight,
+		"Quit":        e.quit,
+		"InsertMode":  e.enableInsertMode,
+		"NormalMode":  e.disableInsertMode,
+	}
 }
 
 func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
@@ -49,10 +66,12 @@ func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
 			x: 0,
 			y: 0,
 		},
+		// should this shit even be in different package? does it make sense?
 		Lines:       linesbuff.NewArrayBuffer(fileContent),
 		gutterWidth: 3,
 	}
 	e.cursorPos.x = e.gutterWidth
+	e.KeyBindings = NewMapKeyBinder(e.actionsMap())
 
 	s.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 
@@ -131,6 +150,10 @@ func (e *Editor) drawInfoBar() {
 		e.Screen.SetContent(x, e.size.height-1, ' ', nil, tcell.StyleDefault)
 	}
 
+	for x := len(mode); x < len(e.infoBarContent)+len(mode); x++ {
+		e.Screen.SetContent(x, e.size.height-1, rune(e.infoBarContent[x-len(mode)]), nil, tcell.StyleDefault)
+	}
+
 	pos := fmt.Sprintf("%d/%d", e.cursorPos.x, e.cursorPos.y)
 	for x := e.size.width - len(pos); x < e.size.width; x++ {
 		e.Screen.SetContent(x, e.size.height-1, rune(pos[x-(e.size.width-len(pos))]), nil, tcell.StyleDefault)
@@ -165,78 +188,89 @@ func (e *Editor) absPos() position {
 // TODO: add methods for getting current position relative and absolute
 // TODO: add key to center the view
 func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
-	if event.Key() == tcell.KeyESC {
-		e.quit()
-	}
+    if e.insertMode && event.Key() == tcell.KeyRune {
+        e.insertChar(event.Rune())
+        return
+    }
 
-	if !e.insertMode && event.Rune() == 'i' {
-		e.insertMode = true
+	// if printable char
+	if event.Key() == tcell.KeyRune {
+		e.KeyBindings.Get(string(event.Rune()))()
 		return
 	}
 
-	if e.insertMode {
-		e.insertChar(event.Rune())
+	e.KeyBindings.Get(string(event.Name()))()
+
+}
+
+func (e *Editor) cursorUp() {
+	if e.absPos().y <= 0 {
 		return
 	}
 
-	// cursor movement
-	switch event.Rune() {
-	case 'j':
-		if e.Lines.LinesNum()-1 <= e.absPos().y {
-			return
-		}
-
+	if e.cursorPos.y == 0 && e.offset.y > 0 {
 		e.cursorPos.y++
-		if e.cursorPos.y > e.size.height-1 {
-			e.offset.y++
-			e.cursorPos.y--
-		}
+		e.offset.y--
+	}
+	e.cursorPos.y--
 
-		e.clampPosX()
+	e.clampPosX()
 
-		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
-	case 'k':
-		if e.absPos().y <= 0 {
-			return
-		}
+	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+}
 
-		if e.cursorPos.y == 0 && e.offset.y > 0 {
-			e.cursorPos.y++
-			e.offset.y--
-		}
-		e.cursorPos.y--
-
-		e.clampPosX()
-
-		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
-	case 'h':
-		if e.absPos().x-e.gutterWidth <= 0 {
-			return
-		}
-		e.cursorPos.x -= 1
-		if e.cursorPos.x-e.gutterWidth+1 == 0 && e.offset.x > 0 {
-			e.offset.x--
-			e.cursorPos.x += 1
-		}
-		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
-	case 'l':
-		if len(e.Lines.GetRow(e.absPos().y))-1+e.gutterWidth <= e.absPos().x {
-			return
-		}
-		e.cursorPos.x += 1
-		if e.cursorPos.x >= e.size.width {
-			e.offset.x++
-			e.cursorPos.x -= 1
-		}
-		e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+func (e *Editor) cursorDown() {
+	if e.Lines.LinesNum()-1 <= e.absPos().y {
+		return
 	}
 
+	e.cursorPos.y++
+	if e.cursorPos.y > e.size.height-1 {
+		e.offset.y++
+		e.cursorPos.y--
+	}
+
+	e.clampPosX()
+
+	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+}
+
+func (e *Editor) cursorLeft() {
+	if e.absPos().x-e.gutterWidth <= 0 {
+		return
+	}
+	e.cursorPos.x -= 1
+	if e.cursorPos.x-e.gutterWidth+1 == 0 && e.offset.x > 0 {
+		e.offset.x--
+		e.cursorPos.x += 1
+	}
+	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+}
+
+func (e *Editor) cursorRight() {
+	if len(e.Lines.GetRow(e.absPos().y))-1+e.gutterWidth <= e.absPos().x {
+		return
+	}
+	e.cursorPos.x += 1
+	if e.cursorPos.x >= e.size.width {
+		e.offset.x++
+		e.cursorPos.x -= 1
+	}
+	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
 
 func (e *Editor) insertChar(c rune) {
 	e.Lines.Insert(c, e.cursorPos.x, e.cursorPos.y)
 	e.cursorPos.x += 1
 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
+}
+
+func (e *Editor) enableInsertMode() {
+	e.insertMode = true
+}
+
+func (e *Editor) disableInsertMode() {
+	e.insertMode = false
 }
 
 func (e *Editor) quit() {

@@ -39,7 +39,6 @@ import (
 //   - we should be able to define more complex keybindings where user needs to provide a sequence of keypresses - use trie data structure
 //   - also support for ctrl/alt mod keypresses (tcell probably supports detecting it)
 
-
 func main() {
 	var fileContent []byte
 	if len(os.Args) >= 2 {
@@ -63,20 +62,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-    // make sure the terminal gets recovered to its proper state in case of exiting program not via os.Exit() (panic is such a case)
-    defer s.Fini()
-    sigs := make(chan os.Signal)
-    signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
-    go func() {
-        switch sig := <-sigs; sig {
-        case syscall.SIGINT:
-            s.Fini()
-            os.Exit(0)
-        case syscall.SIGTERM:
-            s.Fini()
-            os.Exit(0)
-        }
-    }()
+	// make sure the terminal gets recovered to its proper state in case of exiting program not via os.Exit() (panic is such a case)
+	defer s.Fini()
+	sigs := make(chan os.Signal)
+	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		switch sig := <-sigs; sig {
+		case syscall.SIGINT:
+			s.Fini()
+			os.Exit(0)
+		case syscall.SIGTERM:
+			s.Fini()
+			os.Exit(0)
+		}
+	}()
 
 	editor := editor.NewEditor(s, fileContent)
 	go editor.EditorLoop()
