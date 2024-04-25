@@ -55,8 +55,10 @@ func (ab *ArrayBuffer) GetRow(y int) []byte {
 }
 
 func (ab *ArrayBuffer) NewLine(x, y int) {
-	ab.lines = append(ab.lines[:y+1], append([]Line{{Content: ab.lines[y].Content[x:]}}, ab.lines[y+1:]...)...)
-	newline := make([]byte, len(ab.lines[y].Content[:x+1]))
-	copy(newline, ab.lines[y].Content[:x+1])
-	ab.lines[y].Content = newline
+	newline := ab.lines[y].Content[x:]
+	ab.lines = append(ab.lines[:y+1], append([]Line{{Content: newline}}, ab.lines[y+1:]...)...)
+	curline := make([]byte, len(ab.lines[y].Content[:x]), len(ab.lines[y].Content[:x])+1)
+	copy(curline, ab.lines[y].Content[:x])
+	curline = append(curline, '\n')
+	ab.lines[y].Content = curline
 }

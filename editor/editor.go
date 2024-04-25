@@ -93,7 +93,7 @@ func (e *Editor) EditorLoop() {
 		}
 
 		e.Display()
-		e.Screen.Sync()
+		e.Screen.Show()
 	}
 }
 
@@ -195,6 +195,7 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 
 	if e.insertMode && event.Key() == tcell.KeyEnter {
 		e.Lines.NewLine(e.cursorPos.x-e.gutterWidth, e.cursorPos.y)
+        e.cursorDown()
 		return
 	}
 
