@@ -62,3 +62,15 @@ func (ab *ArrayBuffer) NewLine(x, y int) {
 	curline = append(curline, '\n')
 	ab.lines[y].Content = curline
 }
+
+func (ab *ArrayBuffer) Buffer() []byte {
+    // c := ab.LinesNum()
+    // for _, l := range ab.lines {
+    //     c *= len(l.Content)
+    // }
+	buf := make([]byte, 0, 0)
+	for _, l := range ab.lines {
+		buf = append(buf, l.Content...)
+	}
+	return buf
+}

@@ -41,4 +41,5 @@ var defaultKeyBindings = KeyBindings{
 	"i":      "InsertMode",
 	"Ctrl+C": "NormalMode",
 	"Esc":    "Quit",
+	"Ctrl+S": "Save",
 }

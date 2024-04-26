@@ -29,6 +29,7 @@ type Editor struct {
 	Events      chan tcell.Event
 	KeyBindings KeyBinder
 
+	file           *os.File
 	cursorPos      position
 	offset         offset
 	insertMode     bool
@@ -40,7 +41,7 @@ type Editor struct {
 }
 
 // {action name -> function pointer} map.
-// used to determine which function should be called when such action occurs.
+// used to determine which function should be called when given action occurs.
 // actions occur during key presses.
 func (e *Editor) actionsMap() ActionsMap {
 	return ActionsMap{
@@ -51,10 +52,11 @@ func (e *Editor) actionsMap() ActionsMap {
 		"Quit":        e.quit,
 		"InsertMode":  e.enableInsertMode,
 		"NormalMode":  e.disableInsertMode,
+		"Save":        e.saveFile,
 	}
 }
 
-func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
+func NewEditor(s tcell.Screen, fileContent []byte, file *os.File) *Editor {
 	e := &Editor{
 		Screen: s,
 		Events: make(chan tcell.Event),
@@ -69,6 +71,7 @@ func NewEditor(s tcell.Screen, fileContent []byte) *Editor {
 		// should this shit even be in different package? does it make sense?
 		Lines:       linesbuff.NewArrayBuffer(fileContent),
 		gutterWidth: 3,
+		file:        file,
 	}
 	e.cursorPos.x = e.gutterWidth
 	e.KeyBindings = NewMapKeyBinder(e.actionsMap())
@@ -219,16 +222,15 @@ func (e *Editor) cursorUp() {
 		e.offset.y--
 	}
 	e.cursorPos.y--
-
-    if e.cursorPos.x < e.targetCol {
-        e.cursorPos.x = e.targetCol
-    }
+	if e.cursorPos.x < e.targetCol {
+		e.cursorPos.x = e.targetCol
+	}
 
 	e.clampPosX()
 
-    if e.cursorPos.x > e.targetCol {
-        e.targetCol = e.cursorPos.x
-    }
+	if e.cursorPos.x > e.targetCol {
+		e.targetCol = e.cursorPos.x
+	}
 
 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
@@ -243,16 +245,15 @@ func (e *Editor) cursorDown() {
 		e.offset.y++
 		e.cursorPos.y--
 	}
-
-    if e.cursorPos.x < e.targetCol {
-        e.cursorPos.x = e.targetCol
-    }
+	if e.cursorPos.x < e.targetCol {
+		e.cursorPos.x = e.targetCol
+	}
 
 	e.clampPosX()
 
-    if e.cursorPos.x > e.targetCol {
-        e.targetCol = e.cursorPos.x
-    }
+	if e.cursorPos.x > e.targetCol {
+		e.targetCol = e.cursorPos.x
+	}
 
 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
@@ -266,7 +267,7 @@ func (e *Editor) cursorLeft() {
 		e.offset.x--
 		e.cursorPos.x += 1
 	}
-    e.targetCol = 0
+	e.targetCol = 0
 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
 
@@ -279,7 +280,7 @@ func (e *Editor) cursorRight() {
 		e.offset.x++
 		e.cursorPos.x -= 1
 	}
-    e.targetCol = 0
+	e.targetCol = 0
 	e.Screen.ShowCursor(e.cursorPos.x, e.cursorPos.y)
 }
 
@@ -299,6 +300,25 @@ func (e *Editor) enableInsertMode() {
 
 func (e *Editor) disableInsertMode() {
 	e.insertMode = false
+}
+
+// unsafe implementation
+// my idea is to make the save atomic and safe temporary file could be used 
+func (e *Editor) saveFile() {
+	if err := e.file.Truncate(0); err != nil {
+		e.infoBarContent = err.Error()
+		return
+	}
+	if _, err := e.file.Seek(0, 0); err != nil {
+		e.infoBarContent = err.Error()
+		return
+	}
+	if _, err := e.file.Write(e.Lines.Buffer()); err != nil {
+		e.infoBarContent = err.Error()
+		return
+	}
+
+    e.infoBarContent = " saved file"
 }
 
 func (e *Editor) quit() {

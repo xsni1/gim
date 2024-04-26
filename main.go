@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -41,15 +42,23 @@ import (
 
 func main() {
 	var fileContent []byte
+    var file *os.File
 	if len(os.Args) >= 2 {
 		fileName := os.Args[1]
 		if fileName != "" {
-			bytes, err := os.ReadFile(fileName)
+			f, err := os.OpenFile(fileName, os.O_RDWR, os.ModeAppend)
+			if err != nil {
+				fmt.Println("err opening file", err)
+				os.Exit(1)
+			}
+            defer f.Close()
+			bytes, err := io.ReadAll(f)
 			if err != nil {
 				fmt.Println("err reading file", err)
 				os.Exit(1)
 			}
 			fileContent = bytes
+            file = f
 		}
 	}
 
@@ -77,7 +86,7 @@ func main() {
 		}
 	}()
 
-	editor := editor.NewEditor(s, fileContent)
+	editor := editor.NewEditor(s, fileContent, file)
 	go editor.EditorLoop()
 	// dowiedziec sie jak w micro dzialaja key bindy - jak wylaczany jest program.
 	// czy kazdy pane/term/buff w/e to tam osobna goroutina?
