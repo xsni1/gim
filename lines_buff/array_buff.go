@@ -64,13 +64,23 @@ func (ab *ArrayBuffer) NewLine(x, y int) {
 }
 
 func (ab *ArrayBuffer) Buffer() []byte {
-    // c := ab.LinesNum()
-    // for _, l := range ab.lines {
-    //     c *= len(l.Content)
-    // }
+	// c := ab.LinesNum()
+	// for _, l := range ab.lines {
+	//     c *= len(l.Content)
+	// }
 	buf := make([]byte, 0, 0)
 	for _, l := range ab.lines {
 		buf = append(buf, l.Content...)
 	}
 	return buf
+}
+
+func (ab *ArrayBuffer) RemoveChar(x, y int) {
+	// remove line
+	if len(ab.lines[y].Content) == 1 {
+		ab.lines = append(ab.lines[:y], ab.lines[y+1:]...)
+		return
+	}
+
+	ab.lines[y].Content = append(ab.lines[y].Content[:x], ab.lines[y].Content[x+1:]...)
 }

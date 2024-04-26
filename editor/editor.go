@@ -53,6 +53,7 @@ func (e *Editor) actionsMap() ActionsMap {
 		"InsertMode":  e.enableInsertMode,
 		"NormalMode":  e.disableInsertMode,
 		"Save":        e.saveFile,
+		"RemoveChar":  e.removeChar,
 	}
 }
 
@@ -196,6 +197,11 @@ func (e *Editor) handleKeyEvent(event *tcell.EventKey) {
 		return
 	}
 
+	if e.insertMode && event.Key() == tcell.KeyBackspace2 {
+        e.removeChar()
+		return
+	}
+
 	if e.insertMode && event.Key() == tcell.KeyEnter {
 		e.Lines.NewLine(e.cursorPos.x-e.gutterWidth, e.cursorPos.y)
 		e.cursorDown()
@@ -303,7 +309,7 @@ func (e *Editor) disableInsertMode() {
 }
 
 // unsafe implementation
-// my idea is to make the save atomic and safe temporary file could be used 
+// TODO: my idea is to make the save operation "atomic" and to do so use temporary file
 func (e *Editor) saveFile() {
 	if err := e.file.Truncate(0); err != nil {
 		e.infoBarContent = err.Error()
@@ -318,7 +324,16 @@ func (e *Editor) saveFile() {
 		return
 	}
 
-    e.infoBarContent = " saved file"
+	e.infoBarContent = " saved file"
+}
+
+func (e *Editor) removeChar() {
+    pos := e.absPos().x-e.gutterWidth-1
+    if pos < 0 {
+        return
+    }
+	e.Lines.RemoveChar(pos, e.absPos().y)
+    e.cursorLeft()
 }
 
 func (e *Editor) quit() {

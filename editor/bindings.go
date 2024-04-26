@@ -34,12 +34,13 @@ type KeyBindings map[string]string
 type KeyEvent func()
 
 var defaultKeyBindings = KeyBindings{
-	"k":      "CursorUp",
-	"j":      "CursorDown",
-	"h":      "CursorLeft",
-	"l":      "CursorRight",
-	"i":      "InsertMode",
-	"Ctrl+C": "NormalMode",
-	"Esc":    "Quit",
-	"Ctrl+S": "Save",
+	"k":         "CursorUp",
+	"j":         "CursorDown",
+	"h":         "CursorLeft",
+	"l":         "CursorRight",
+	"i":         "InsertMode",
+	"Ctrl+C":    "NormalMode",
+	"Esc":       "Quit",
+	"Ctrl+S":    "Save",
+	"Backspace": "RemoveChar",
 }
