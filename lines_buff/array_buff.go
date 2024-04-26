@@ -76,14 +76,18 @@ func (ab *ArrayBuffer) Buffer() []byte {
 }
 
 func (ab *ArrayBuffer) RemoveChar(x, y int) {
+	// if the cursor is at the very begining on both axis
+	if x == -1 && y == 0 {
+		return
+	}
 	// if there is only eol char - remove the line
 	if len(ab.lines[y].Content) == 1 {
 		ab.lines = append(ab.lines[:y], ab.lines[y+1:]...)
 		return
 	}
 
-    // if the cursor is at the very begining of the line - merge current line with previous line
-    // cursor is really at x position of 0, but 1 is subtracted from it so character before cursor is deleted
+	// if the cursor is at the very begining of the line - merge current line with previous line
+	// cursor is really at x position of 0, but 1 is subtracted from it so character before cursor is deleted
 	if x == -1 {
 		// we need to remove eol from the previous line and append it to the end
 		ab.lines[y-1].Content = append(ab.lines[y-1].Content[:len(ab.lines[y-1].Content)-1], ab.lines[y].Content...)
