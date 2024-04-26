@@ -329,9 +329,6 @@ func (e *Editor) saveFile() {
 
 func (e *Editor) removeChar() {
     pos := e.absPos().x-e.gutterWidth-1
-    if pos < 0 {
-        return
-    }
 	e.Lines.RemoveChar(pos, e.absPos().y)
     e.cursorLeft()
 }
