@@ -327,6 +327,7 @@ func (e *Editor) saveFile() {
 	e.infoBarContent = " saved file"
 }
 
+// logic that decides what should be deleted should be moved here, otherwise we have no way of knowing where cursor should be moved afterwards
 func (e *Editor) removeChar() {
     pos := e.absPos().x-e.gutterWidth-1
 	e.Lines.RemoveChar(pos, e.absPos().y)

@@ -12,10 +12,6 @@ import (
 	"github.com/xsni1/gim/editor"
 )
 
-// TODO: Terminal physical lines != text lines - this is causing LOTS of bugs
-// TODO: When text goes to the next line old text gets overwritten
-// TODO: \t not interpreted correctly
-
 // 1. Store lines of text in an 2D array of bytes
 //    a) place manipulation of this buffer behind some structure/interface - so in the future it is easy to replace array implementation with rope for example
 // 2. Run main event loop, which first (or not first) refreshes display and then checks for any new events
@@ -42,7 +38,7 @@ import (
 
 func main() {
 	var fileContent []byte
-    var file *os.File
+	var file *os.File
 	if len(os.Args) >= 2 {
 		fileName := os.Args[1]
 		if fileName != "" {
@@ -51,14 +47,14 @@ func main() {
 				fmt.Println("err opening file", err)
 				os.Exit(1)
 			}
-            defer f.Close()
+			defer f.Close()
 			bytes, err := io.ReadAll(f)
 			if err != nil {
 				fmt.Println("err reading file", err)
 				os.Exit(1)
 			}
 			fileContent = bytes
-            file = f
+			file = f
 		}
 	}
 
